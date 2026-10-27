@@ -1,0 +1,675 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>LVT Console Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  /* Specialized core palette — Brand Guidelines v1.0 */
+  --prism:#512FFF;
+  --prism-deep:#190935;
+  --shark:#92989B;
+  --frost:#E8EAEF;
+  /* console surfaces derived from black, biased toward the accent */
+  --ink:#05060A;
+  --panel:#0E1017;
+  --panel-2:#151824;
+  --panel-3:#1D2130;
+  --line:#23262F;
+  --line-soft:#171A22;
+  --prism-soft:rgba(81,47,255,.13);
+  --prism-line:#332B7A;
+  --prism-lift:#9C86FF;
+  /* operational state, never brand */
+  --amber:#E0A93B;
+  --red:#D64545;
+  --green:#4FB286;
+  /* type */
+  --display:'Archivo','Termina',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;
+  --sans:'Public Sans','General Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ink);color:var(--frost);
+  font-family:var(--sans);font-size:15px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--prism-lift)}
+:focus-visible{outline:2px solid var(--prism);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- brand devices ---------- */
+.wordmark{font-family:var(--display);font-weight:600;letter-spacing:.34em;text-transform:uppercase;font-size:12px;color:var(--prism);white-space:nowrap}
+.wordmark.frost{color:var(--frost)}
+.trio{width:16px;height:15px;flex:0 0 auto;color:var(--prism)}
+.trio path{stroke:currentColor}
+.cropmark{position:fixed;right:-58px;bottom:-58px;width:250px;height:230px;z-index:0;color:var(--prism);opacity:.055;pointer-events:none}
+.brandbar{display:flex;height:3px;margin:0 0 18px;border-radius:2px;overflow:hidden}
+.brandbar i{display:block;height:3px}
+.brandbar i:nth-child(1){width:14%;background:#000;border-top:1px solid var(--line)}
+.brandbar i:nth-child(2){width:26%;background:var(--frost)}
+.brandbar i:nth-child(3){width:60%;background:var(--prism)}
+
+/* ---------- chrome ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:11px 20px;background:rgba(5,6,10,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(9px);
+}
+.docid{font-family:var(--mono);font-size:10.5px;color:var(--shark);letter-spacing:.09em;text-transform:uppercase}
+.clock{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--frost);display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.progwrap{height:2px;background:var(--line);position:sticky;top:43px;z-index:39}
+.progbar{height:2px;width:0;background:linear-gradient(90deg,var(--prism-deep),var(--prism));transition:width .4s ease}
+
+.shell{display:grid;grid-template-columns:262px 1fr;min-height:100vh;position:relative;z-index:1}
+.rail{border-right:1px solid var(--line);padding:20px 0 70px;position:sticky;top:45px;height:calc(100vh - 45px);overflow:auto}
+.railhead{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--shark);padding:0 18px 8px}
+.railgroup{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--prism);padding:16px 18px 6px;border-top:1px solid var(--line-soft);margin-top:6px}
+.railgroup:first-of-type{border-top:0;margin-top:0}
+.navitem{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;border:0;border-left:2px solid transparent;color:var(--shark);font-family:var(--sans);font-size:12.5px;padding:7px 18px;cursor:pointer;line-height:1.35}
+.navitem:hover{color:var(--frost);background:var(--panel)}
+.navitem.on{color:var(--frost);border-left-color:var(--prism);background:var(--prism-soft)}
+.navitem .n{font-family:var(--mono);font-size:10px;color:var(--prism);min-width:20px}
+.navitem.done .n::after{content:" ✓";color:var(--green)}
+main{padding:32px 34px 120px;max-width:880px;position:relative;z-index:1}
+
+/* ---------- type ---------- */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--prism);margin:0 0 10px}
+h1{font-family:var(--display);font-size:clamp(25px,4.2vw,38px);line-height:1.05;margin:0 0 14px;text-transform:uppercase;letter-spacing:.02em;font-weight:700;text-wrap:balance}
+h2{font-family:var(--display);font-size:17px;margin:36px 0 12px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;padding-top:14px;border-top:1px solid var(--line)}
+h3{font-family:var(--sans);font-size:13px;margin:22px 0 8px;letter-spacing:.14em;text-transform:uppercase;color:var(--shark);font-weight:600}
+.subline{font-size:15.5px;color:var(--frost);line-height:1.5;margin:0 0 14px;max-width:64ch}
+p{margin:0 0 12px;max-width:68ch}
+ul,ol{margin:0 0 12px;padding-left:22px;max-width:66ch}
+li{margin:0 0 6px}
+b,strong{font-weight:600}
+code,.mono{font-family:var(--mono);font-size:12.5px}
+.small{font-size:12.5px}
+.muted{color:var(--shark)}
+.sopref{font-family:var(--mono);font-size:11px;color:var(--frost);background:var(--panel-2);border:1px solid var(--line);padding:2px 7px;border-radius:3px;white-space:nowrap}
+.confirm{font-family:var(--mono);font-size:11.5px;color:var(--amber);background:rgba(224,169,59,.08);border:1px dashed #5A4620;padding:1px 6px;border-radius:3px}
+
+/* ---------- cover ---------- */
+.cover{position:relative;overflow:hidden;border:1px solid var(--prism-line);border-radius:8px;background:linear-gradient(118deg,#000 0%,var(--prism-deep) 48%,#3A1FD6 88%,var(--prism) 112%);padding:30px 32px 26px;margin:0 0 22px}
+.cover .covermark{position:absolute;right:-42px;top:-46px;width:190px;height:175px;color:#fff;opacity:.16}
+.cover h1{margin:12px 0 10px}
+.cover .tag{font-size:13px;color:#D8D2FF;letter-spacing:.04em;margin:0}
+.cover .kv{font-family:var(--mono);font-size:11px;color:#CFC8FF;letter-spacing:.05em}
+.rule{height:1px;background:rgba(255,255,255,.22);margin:18px 0 12px;max-width:320px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:0 0 20px}
+.stat{background:var(--panel);padding:14px}
+.stat b{display:block;font-family:var(--display);font-weight:700;font-size:26px;line-height:1;color:var(--frost);font-variant-numeric:tabular-nums}
+.stat span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--shark);margin-top:7px}
+
+/* ---------- blocks ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin:0 0 18px}
+.card.tight{padding:14px 16px}
+.example{border-left:2px solid var(--prism)}
+.takeaway{background:linear-gradient(180deg,rgba(81,47,255,.11),rgba(81,47,255,.02));border-color:var(--prism-line)}
+.takeaway h3{color:var(--prism-lift)}
+.ctrl{border:1px solid var(--prism-line);border-left:3px solid var(--prism);border-radius:5px;background:linear-gradient(180deg,rgba(81,47,255,.09),rgba(81,47,255,.015));padding:13px 16px;margin:0 0 18px}
+.ctrl .lab{font-family:var(--display);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--prism);display:block;margin-bottom:5px;font-weight:600}
+.ctrl p{margin:0;font-size:14px}
+
+.tablewrap{overflow-x:auto;margin:0 0 14px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--shark);font-weight:400}
+tbody tr:nth-child(even){background:rgba(232,234,239,.022)}
+td.mono{font-family:var(--mono);font-size:12px;white-space:nowrap}
+
+/* ---------- camera tiles ---------- */
+.wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:0 0 14px}
+.tile{background:#02040A;border:1px solid var(--line);border-radius:5px;overflow:hidden;text-align:left;padding:0;color:inherit;font:inherit;cursor:pointer}
+.tile.static{cursor:default}
+.tile .scene{position:relative;height:112px;background:
+  radial-gradient(120% 90% at 50% 120%, #0B1220 0%, #04060C 70%);
+  border-bottom:1px solid var(--line)}
+.tile .horizon{position:absolute;left:0;right:0;top:56%;height:1px;background:#182033}
+.tile .lot{position:absolute;left:8%;right:8%;top:60%;bottom:8%;border:1px solid #141C2B;border-radius:2px}
+.tile .subject{position:absolute;width:9px;height:20px;border-radius:4px;background:#2A3550;bottom:22%;left:26%}
+.tile .veh{position:absolute;width:34px;height:13px;border-radius:2px;background:#1C2436;bottom:14%;right:16%}
+.tile.thermal .scene{background:radial-gradient(120% 90% at 50% 120%, #16113A 0%, #05040E 72%)}
+.tile.thermal .subject{background:#E0A93B;box-shadow:0 0 12px 4px rgba(224,169,59,.45)}
+.tile.thermal .veh{background:#7A5C2A;box-shadow:0 0 10px 2px rgba(224,169,59,.18)}
+.tile.thermal .lot{border-color:#241B4A}
+.tile .meta{display:flex;align-items:center;gap:8px;padding:7px 10px;font-family:var(--mono);font-size:10.5px;color:var(--shark);letter-spacing:.06em}
+.tile .meta .ts{margin-left:auto;color:var(--frost);font-variant-numeric:tabular-nums}
+.tile.dead .meta .ts{color:var(--red)}
+.tile.picked{border-color:var(--prism);box-shadow:0 0 0 1px var(--prism)}
+.tile.right{border-color:var(--green);box-shadow:0 0 0 1px var(--green)}
+.tile.wrong{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+
+/* screenshot placeholder, framed like an empty camera tile */
+.shot{border:1px dashed #2E3340;border-radius:5px;background:repeating-linear-gradient(135deg,#080A11 0 10px,#0B0E16 10px 20px);padding:20px 18px;margin:0 0 18px;text-align:center}
+.shot .lab{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--prism);display:block;margin-bottom:6px}
+.shot .what{font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--frost);display:block;margin-bottom:6px;font-weight:600}
+.shot .cap{font-size:12.5px;color:var(--shark);margin:0 auto;max-width:52ch}
+
+/* ---------- feed ---------- */
+.feed{background:#020306;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:0 0 18px}
+.feedhead{display:flex;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--shark)}
+.feedrow{display:grid;grid-template-columns:60px 1fr;gap:12px;padding:10px 14px;border-bottom:1px solid #101219;font-size:13.5px}
+.feedrow:last-child{border-bottom:0}
+.feedrow .t{font-family:var(--mono);font-size:12px;color:var(--amber);font-variant-numeric:tabular-nums}
+.feedrow.sys .t{color:var(--shark)}
+.feedrow.ok .t{color:var(--green)}
+.feedrow.crit{background:rgba(214,69,69,.07)}
+.feedrow.crit .t{color:var(--red)}
+
+/* ---------- interaction ---------- */
+.prompt{font-weight:600;margin:0 0 12px;font-size:15px}
+.opts{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
+.opt{display:flex;gap:11px;align-items:flex-start;text-align:left;width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;color:var(--frost);font:inherit;padding:11px 13px;cursor:pointer;transition:.15s}
+.opt:hover:not(:disabled){border-color:var(--prism);background:var(--panel-3)}
+.opt .k{font-family:var(--mono);font-size:11px;color:var(--prism);padding-top:2px;min-width:14px}
+.opt.right{border-color:var(--green);background:rgba(79,178,134,.10)}
+.opt.wrong{border-color:var(--red);background:rgba(214,69,69,.09)}
+.opt:disabled{cursor:default;opacity:.92}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--prism);color:#fff;border:0;border-radius:4px;font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding:12px 18px;cursor:pointer}
+.btn:hover{background:#6444FF}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--frost)}
+.btn.ghost:hover{border-color:var(--prism);background:var(--prism-soft)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.reveal{display:none;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.reveal.show{display:block}
+.rlabel{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--shark);margin:0 0 6px}
+.risk{color:#F0B7B7}
+.good{color:#A8DFC6}
+.docstrip{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:38px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--shark)}
+.docstrip .pg{margin-left:auto;color:var(--frost)}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:14px 0}
+  main{padding:24px 16px 90px}
+  .cropmark{display:none}
+}
+</style>
+
+<svg class="cropmark" viewBox="0 0 100 92" aria-hidden="true">
+  <path d="M50 11 L89 79 L11 79 Z" fill="none" stroke="currentColor" stroke-width="15" stroke-linejoin="round"/>
+</svg>
+
+<div class="topbar">
+  <svg class="trio" viewBox="0 0 100 92" aria-hidden="true"><path d="M50 11 L89 79 L11 79 Z" fill="none" stroke-width="16" stroke-linejoin="round"/></svg>
+  <div class="wordmark">Specialized</div>
+  <div class="docid">GSOC-TRN-005 · LVT Platform Navigation · Plano Floor</div>
+  <div class="clock"><span class="pulse"></span><span id="clock">--:--:--</span></div>
+</div>
+<div class="progwrap"><div class="progbar" id="progbar"></div></div>
+
+<div class="shell">
+  <nav class="rail" id="rail"><div class="railhead">Module contents</div></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+const S={page:0,done:new Set()};
+const SOP=t=>`<span class="sopref">${t}</span>`;
+const CF=t=>`<span class="confirm">[CONFIRM: ${t}]</span>`;
+const CTRL=t=>`<div class="ctrl"><span class="lab">Control</span><p>${t}</p></div>`;
+const BAR=`<div class="brandbar"><i></i><i></i><i></i></div>`;
+const SHOT=(n,what,cap)=>`<div class="shot"><span class="lab">Screenshot ${n} · to be captured</span><span class="what">${what}</span><p class="cap">${cap}</p></div>`;
+
+function tick(){
+  const d=new Date();
+  const el=document.getElementById('clock');
+  if(el) el.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':')+' LOCAL';
+}
+setInterval(tick,1000);tick();
+
+/* ============================ sections ============================ */
+const SECTIONS=[
+
+/* 0 */
+{part:"Front matter",nav:"Module brief",render(){return `
+<div class="cover">
+  <svg class="covermark" viewBox="0 0 100 92" aria-hidden="true"><path d="M50 11 L89 79 L11 79 Z" fill="none" stroke="currentColor" stroke-width="15" stroke-linejoin="round"/></svg>
+  <div class="wordmark frost">Specialized</div>
+  <h1>LVT platform<br>navigation</h1>
+  <p class="tag">Global Security Operations Center · Interactive operator job aid</p>
+  <div class="rule"></div>
+  <p class="kv" style="margin:0">GSOC-TRN-005 · v0.1 Draft · Internal, operational<br>Companion to SOP-GSOC-001, 005, 006, 007, 008, 013</p>
+</div>
+
+<p class="subline">This is for an operator who has never opened LVT. It walks the screens in the order you meet them on shift, and it names the procedure behind each one.</p>
+
+<div class="statgrid">
+  <div class="stat"><b>5</b><span>Screens you live in</span></div>
+  <div class="stat"><b>6</b><span>Steps per alert</span></div>
+  <div class="stat"><b>7</b><span>Sections</span></div>
+  <div class="stat"><b>9</b><span>Open confirmations</span></div>
+</div>
+
+<h2>What this is not</h2>
+<p>It is not an SOP. Where this guide and a controlled SOP disagree, the SOP wins, every time. It is also not a substitute for sitting with a certified operator during probation under ${SOP('SOP-GSOC-002')}.</p>
+
+<div class="card takeaway">
+  ${BAR}
+  <h3>Hold these two before anything else</h3>
+  <ol style="margin-bottom:0">
+    <li><b>LVT shows. The incident system records.</b> Notes and tags inside the platform are working annotations. They are not the record, and QA does not read them as one. ${CF('incident system of record not yet selected')}</li>
+    <li><b>Every access is logged.</b> Every camera opened, every clip pulled, every light turned on. Curiosity has never been a legitimate operational purpose.</li>
+  </ol>
+</div>
+`}},
+
+/* 1 */
+{part:"Part A · Before the shift",nav:"1 · Getting in",render(){return `
+<p class="eyebrow">Part A · Access and accounts</p>
+<h1>Getting in</h1>
+<p class="subline">LiveView Technologies builds the solar powered, cellular connected units on the lots. Cameras, sensors, lights, a speaker. They report into a cloud platform you reach from a browser at the console. The units are the eyes. The platform is how you use them.</p>
+
+<h2>Your account</h2>
+<ul>
+  <li>You log in on your own named account, on the console, in a browser. ${CF('platform URL, and whether login is direct or through SSO')} ${CF('MFA method')}</li>
+  <li>Never a shared account, a training account, or a colleague's open session. Not even at shift start with an expired password. That is a Shift Lead matter and ${SOP('SOP-GSOC-005')} is explicit about it.</li>
+  <li>Your account is scoped to your assigned sites. If you can see a site that is not on your roster, or you cannot see one that is, stop and raise it. Both directions are a problem. ${CF('operator permission level, and whether operators can change presets or disarm units')}</li>
+</ul>
+
+${CTRL(`You may open a client feed for one of four reasons: an active alert, a structured patrol sweep, a feed health check, or following up something you observed yourself. Nothing else, per ${SOP('SOP-GSOC-006')}.`)}
+
+${SHOT('01','Login and landing screen','The login page and the first screen after sign in, with client identifying detail blurred.')}
+
+<h2>Where the platform sits in shift start</h2>
+<p>Four of the nine readiness checks in ${SOP('SOP-GSOC-005')} happen inside these screens. The rule that matters is the same for all of them: anything that fails gets reported <b>before</b> you declare readiness. Never after, and never once it gets quiet.</p>
+`}},
+
+/* 2 */
+{part:"Part A · Before the shift",nav:"2 · The five screens",render(){return `
+<p class="eyebrow">Part A · Orientation</p>
+<h1>The five screens</h1>
+<p class="subline">You will spend almost your whole shift in the first three.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th style="width:150px">Screen</th><th>What it is for</th><th style="width:230px">Watch out for</th></tr></thead>
+  <tbody>
+    <tr><td><b>Unit list and map</b></td><td>Finding a unit. Search by name, number or location, or pick it off the map. This is how you get from "alert at RT-2081" to eyes on RT-2081.</td><td>Site IDs are the join key across every GSOC system. Confirm you opened the right one before you classify anything.</td></tr>
+    <tr><td><b>Live view</b></td><td>Live feeds for a unit. Switch cameras on the unit, jump to another unit, toggle optical and thermal, pan, tilt, zoom, recall presets.</td><td>A frozen feed shows a perfectly normal image. Check the timestamp is advancing, not that the picture looks fine.</td></tr>
+    <tr><td><b>Command Center</b></td><td>The alert queue. Live events and past events, with playback, camera views, notes, tags, and the site procedures and contacts attached to each event.</td><td>Acknowledging is not resolving. A cleared event that was never verified looks identical in the queue to one that was fully worked.</td></tr>
+    <tr><td><b>Recorded video</b></td><td>Historical footage by date and time, scrubbing and retrieval, plus keyword Forensic Search where the contract includes it.</td><td>Search finds footage faster. It is not verification, and it never gets quoted in a record.</td></tr>
+    <tr><td><b>Health dashboard</b></td><td>Unit uptime, battery voltage, power interruptions, connectivity, self healing events.</td><td>Faults get logged when you see them, with site ID and time. Not at end of shift.</td></tr>
+  </tbody>
+</table>
+</div>
+
+${SHOT('02','Unit list and map view','The unit list with the map beside it, several sites visible at once.')}
+${SHOT('03','Live view with camera controls','A unit open in live view with the camera selector, the PTZ controls, and the optical/thermal toggle all visible.')}
+
+<h2>Exercise · which feed is dead?</h2>
+<div class="card">
+  <p class="prompt">Four cameras at DC-4417. All four are presenting an image. One of them stopped nine minutes ago. Click it.</p>
+  <div class="wall" id="frozenwall"></div>
+  <div class="reveal" id="frozenrev"></div>
+</div>
+
+<div class="card takeaway">
+  ${BAR}
+  <h3>Carry this</h3>
+  <p style="margin-bottom:0">The picture tells you nothing. The clock tells you everything. A frozen feed is the single easiest failure to miss, and it hides an entire coverage gap behind an image that looks completely fine.</p>
+</div>
+`},init(){
+  const wall=document.getElementById('frozenwall');
+  const rev=document.getElementById('frozenrev');
+  const cams=[{id:'CAM 1',label:'Front apron'},{id:'CAM 3',label:'West yard'},{id:'CAM 5',label:'Dock line'},{id:'CAM 7',label:'North fence'}];
+  const dead=1;
+  const base=new Date();
+  const tiles=[];
+  cams.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='tile'+(i===dead?' dead':'');
+    b.innerHTML=`<div class="scene"><div class="horizon"></div><div class="lot"></div><div class="subject" style="left:${18+i*13}%"></div>${i%2?'<div class="veh"></div>':''}</div>
+      <div class="meta"><span>${c.id}</span><span class="muted">${c.label}</span><span class="ts">--:--:--</span></div>`;
+    b.onclick=()=>{
+      if(rev.classList.contains('show'))return;
+      tiles.forEach((t,ti)=>{t.disabled=true;t.classList.add(ti===dead?'right':(ti===i?'wrong':''))});
+      const ok=i===dead;
+      rev.innerHTML=`<p class="rlabel">${ok?'Correct':'Not this one'}</p>
+        <p class="${ok?'good':'risk'}">${ok
+          ? 'CAM 3 is the frozen one. Its timestamp has not moved since the moment it died, and the image behind it is a still frame of an empty yard.'
+          : 'That camera is live. CAM 3 is the dead one, and the only thing that gave it away was a clock that stopped.'}</p>
+        <p class="small">A frozen feed is a fault, logged at the time of observation with site ID and timestamp under ${SOP('SOP-GSOC-006')}. Then the second question, which people forget: does any other camera cover that view? If not, that is a coverage gap and it gets recorded as one.</p>`;
+      rev.classList.add('show');
+      S.done.add(S.page);paint();
+    };
+    wall.appendChild(b);tiles.push(b);
+  });
+  function stamp(){
+    const now=new Date();
+    tiles.forEach((t,i)=>{
+      const d=(i===dead)?new Date(base.getTime()-9*60000):now;
+      t.querySelector('.ts').textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+    });
+  }
+  stamp();setInterval(stamp,1000);
+}},
+
+/* 3 */
+{part:"Part B · Working an alert",nav:"3 · The event lands",render(){return `
+<p class="eyebrow">Part B · SOP-GSOC-001 §6.1</p>
+<h1>The event lands<br>in Command Center</h1>
+<p class="subline">An alert arrives in the queue with the unit, the time, the alert type, and the clip the unit recorded when it triggered.</p>
+
+<p>${CF('alert type names as configured for this program, for example human intrusion, vehicle, loitering, license plate')}</p>
+
+<h2>First two moves, in this order</h2>
+<ol>
+  <li><b>Acknowledge it.</b> That takes ownership and starts your clock.</li>
+  <li><b>Open the incident record.</b> Before you verify, not after. Do it the other way round and your own log shows a delay that never happened.</li>
+</ol>
+<p>On a surge, work potential life safety first and site criticality second, and tell the Supervisor the surge is running.</p>
+
+${CTRL(`The record is opened <b>before</b> verification begins, not after the outcome is known. Opening it retrospectively destroys the timing evidence the acknowledgement KPI depends on.`)}
+
+${SHOT('04','Command Center event queue','The queue with several events in different states, plus the priority and status indicators.')}
+
+<h2>Then look, properly</h2>
+<div class="feed">
+  <div class="feedhead">Verification sequence at the console · SOP-GSOC-007</div>
+  <div class="feedrow sys"><div class="t">1</div><div><b>Play the triggering clip.</b> All of it, including the approach. The approach is usually more useful than the moment the analytic fired.</div></div>
+  <div class="feedrow sys"><div class="t">2</div><div><b>Switch to live on the same camera.</b> The clip tells you what happened. Live tells you what is happening now.</div></div>
+  <div class="feedrow sys"><div class="t">3</div><div><b>Toggle optical and thermal.</b> Thermal earns its keep in the dark and through light cover.</div></div>
+  <div class="feedrow sys"><div class="t">4</div><div><b>Move across cameras</b> on the unit, then to adjacent units. One camera showing an empty frame has established one thing: that camera cannot see anyone.</div></div>
+  <div class="feedrow sys"><div class="t">5</div><div><b>PTZ for detail, then return to preset.</b> A camera left where you pointed it is a blind spot for whoever has the console next.</div></div>
+  <div class="feedrow ok"><div class="t">6</div><div><b>Read the panels</b> before you act. Procedures, contacts, map.</div></div>
+</div>
+
+<h2>Optical and thermal, side by side</h2>
+<p class="small muted">Click either tile to switch the pair. Same scene, two sensors.</p>
+<div class="wall" id="thermwall"></div>
+<p class="small" id="thermnote">Optical: you can describe clothing, a tool, a direction of travel. Thermal: you can tell something warm is there, in the dark, through light cover. What you cannot do is call a warm shape a person and write that down as observed fact.</p>
+
+${CTRL(`Never read a plate off a heavy digital zoom and record it as fact. A partially guessed plate is worse than none, and it puts a stranger's vehicle into a police report.`)}
+
+<h2>The panels attached to the event</h2>
+<ul>
+  <li><b>Procedures.</b> What this site wants done for this kind of event. Read it before you dispatch, not after.</li>
+  <li><b>Contacts.</b> The site's people. Cross check against the escalation matrix in the SOP library. An entry with a stale verification date is no contact at all.</li>
+  <li><b>Map.</b> Where the unit sits, which is what you need when you are giving a responder an access point.</li>
+</ul>
+
+${SHOT('05','Expanded event detail','An event open with the clip, the camera selector, and the notes, tags, procedures and contacts panels.')}
+`},init(){
+  const wall=document.getElementById('thermwall');
+  let thermal=false;
+  function draw(){
+    wall.innerHTML='';
+    [['CAM 3','West yard'],['CAM 3','West yard · same instant']].forEach((c,i)=>{
+      const on = i===1 ? !thermal : thermal;
+      const b=document.createElement('button');
+      b.className='tile'+(on?' thermal':'');
+      b.innerHTML=`<div class="scene"><div class="horizon"></div><div class="lot"></div><div class="subject" style="left:30%"></div><div class="veh"></div></div>
+        <div class="meta"><span>${c[0]}</span><span class="muted">${on?'THERMAL':'OPTICAL'}</span><span class="ts">02:41:16</span></div>`;
+      b.onclick=()=>{thermal=!thermal;draw();S.done.add(S.page);paint();};
+      wall.appendChild(b);
+    });
+  }
+  draw();
+}},
+
+/* 4 */
+{part:"Part B · Working an alert",nav:"4 · Deterrence & evidence",render(){return `
+<p class="eyebrow">Part B · SOP-GSOC-007, 008, 010</p>
+<h1>Deterrence,<br>evidence, closure</h1>
+<p class="subline">The unit can push back on its own. Lights, strobe, and a speaker for live talk down or a recorded message. All of it is a deterrent. None of it replaces verification or dispatch.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th style="width:130px">Control</th><th>Use it when</th><th>Do not use it when</th></tr></thead>
+  <tbody>
+    <tr><td><b>Floodlights</b></td><td>You need a usable image, or you want to signal presence early in a property event.</td><td>It would light up a responder's approach.</td></tr>
+    <tr><td><b>Strobe</b></td><td>Deterrence on a verified, non life safety event where the site allows it.</td><td>Emergency services are inbound, or anyone on scene may be injured.</td></tr>
+    <tr><td><b>Talk down</b></td><td>The site is authorized for it and a live warning is likely to move people off the property.</td><td>You are not sure it is authorized, or announcing yourself could change how an armed or cornered person behaves. When in doubt, do not.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>${CF('which sites are authorized for talk-down, and whether operators may use the strobe without supervisor approval')}</p>
+<p>Whatever you use, it goes in the record with the time. A talk down that is not written down did not happen.</p>
+
+<h2>Capturing evidence</h2>
+<ul>
+  <li>Bookmark or capture the segment covering the <b>full</b> event, with a margin before and after.</li>
+  <li>Write the clip reference into the incident record at the time you capture it, not later.</li>
+  <li>Do not crop, brighten, annotate or otherwise touch source material. Chain of custody under ${SOP('SOP-GSOC-018')} depends on the original being untouched. Mark any working copy clearly as a copy.</li>
+  <li>${CF('on-platform retention window, and the export path for evidence that has to leave the platform')}</li>
+</ul>
+
+<h2>Classify, tag, close out</h2>
+<p>Classification happens under ${SOP('SOP-GSOC-007')}, not in the platform dropdown. The platform tag is a label on an event. The classification is the decision, and it lives in the incident record with the observations that support it.</p>
+<ul>
+  <li>Non actionable, actionable non life safety, actionable life safety, or unresolved. Nothing else, and unresolved is a trigger for Level 2, not a place to file something.</li>
+  <li>On a false alert, record the specific cause. "Vegetation in wind, camera 3 field of view" is a cause. "False alarm" is a shrug.</li>
+  <li>You complete the record. The Supervisor closes it.</li>
+</ul>
+
+${CTRL(`Disarming a unit stops it generating alerts for as long as you set. That is a client visible change to coverage and it is not an operator decision. Never disarm without documented supervisor authorization, and never leave a unit disarmed across a handover without it appearing in the passdown. ${CF('whether disarm should sit in the operator permission set at all')}`)}
+
+<h2>Knowledge check</h2>
+<div id="c4"></div>
+`},init(){checks('c4',[
+  {q:"An alert arrives. What is your first action in the platform?",
+   o:["Pull the live view, then acknowledge once you know what it is","Acknowledge, then open the incident record, then verify","Read the site procedures panel first","Tag the event so the queue stays clean"],
+   a:1,
+   ex:"Acknowledge first. It takes ownership and starts the clock the KPI is measured against. Verification is the very next thing you do, but if you verify first and acknowledge after, your own record shows a delay that never happened."},
+  {q:"You zoom a camera hard to read a plate. Two characters are ambiguous. What goes in the record?",
+   o:["Your best reading, noted as approximate","The full plate, since a partial is not useful to anyone","Only the characters that are legible, described as partial","Nothing about the vehicle at all"],
+   a:2,
+   ex:"Only what is legible, and say it is partial. A guessed character puts a stranger's vehicle into a police report and there is no way to un-say it. The vehicle still gets described: type, colour, distinguishing features, direction."},
+  {q:"A unit at a quiet site keeps generating nuisance alerts and it is slowing you down. You:",
+   o:["Disarm it for a couple of hours and note it in the passdown","Disarm it and re-arm before handover so nobody is affected","Work the alerts and raise the nuisance pattern for tuning","Tag them all as false and stop opening them"],
+   a:2,
+   ex:"Work them, and raise the pattern so detection gets tuned. Disarming is a client visible change to coverage and it is not yours to make. Tagging without opening is the same failure as clearing without verifying, just tidier looking."}
+]);}},
+
+/* 5 */
+{part:"Part C · The rest of the shift",nav:"5 · Video, search, health",render(){return `
+<p class="eyebrow">Part C · SOP-GSOC-006, 012, 013, 018</p>
+<h1>Recorded video,<br>search and health</h1>
+
+<h2>Pulling recorded footage</h2>
+<p>Recorded video is looked up by unit, date and time, then scrubbed to the moment you need. You will use it to verify an alert the live view could not settle, and to reconstruct a sequence for a report.</p>
+<p>You will also get asked for it after the fact. That request is not yours to answer. Law enforcement and external requests outside a live emergency go to the Program Director under ${SOP('SOP-GSOC-012')} and ${SOP('SOP-GSOC-018')}. You pull footage when someone who is allowed to ask, asks.</p>
+
+<h2>Forensic Search</h2>
+<p>Where the contract includes it, the platform searches footage by description instead of by timestamp. You type "white pickup" or "person on foot" and it surfaces candidate clips. On a needle in a haystack review that saves real time.</p>
+<p>Two limits worth holding on to. A hit is a clip to go look at, not a fact. And it never appears in a record as a source. What goes in the record is what <b>you</b> observed on the footage it found. ${CF('whether Forensic Search is in scope for this program')}</p>
+
+<h2>The health dashboard</h2>
+<p>Health shows unit uptime, battery and voltage, power interruptions, connectivity, and self healing events where a unit recovered on its own. Check it at shift start and again through the shift. Feeds fail mid shift and they fail quietly.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th style="width:190px">What you see</th><th>What it usually means</th><th>What you do</th></tr></thead>
+  <tbody>
+    <tr><td><b>Unit offline</b></td><td>Connectivity or power loss. The site is dark.</td><td>Log it with site ID and time, report it, and record the coverage gap for the period.</td></tr>
+    <tr><td><b>Voltage trending down</b></td><td>Solar shortfall, often weather or shading. It will go offline later.</td><td>Raise it before it fails. This is the one you can get ahead of.</td></tr>
+    <tr><td><b>Repeated self healing</b></td><td>Something intermittent. It will look fine whenever anyone checks.</td><td>Log the pattern, not just the instance. Trend data is what gets it fixed.</td></tr>
+    <tr><td><b>Image present, clock frozen</b></td><td>The feed is dead and looks alive.</td><td>Treat it as a lost camera. Log it, and check what else covers that view.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>A fault at a high criticality site, or across multiple sites, goes up immediately under ${SOP('SOP-GSOC-013')}. Degraded operations are declared by the Supervisor, not absorbed quietly by whoever noticed.</p>
+
+${SHOT('06','Health dashboard','The health view showing uptime and voltage for several units, with at least one degraded unit visible.')}
+
+<h2>The mobile app</h2>
+<p>LVT has a phone app that does most of what the desktop does, and it is useful for supervisors and field roles. On the floor it is a different question. Personal devices are prohibited at the console under ${SOP('SOP-GSOC-006')}, and watching a phone while seated at a console is not monitoring. ${CF('whether the mobile app is authorized for GSOC roles, and for whom')}</p>
+`}},
+
+/* 6 */
+{part:"Part C · The rest of the shift",nav:"6 · Week one mistakes",render(){return `
+<p class="eyebrow">Part C · Failure modes</p>
+<h1>What goes wrong<br>in week one</h1>
+<p class="subline">None of these come from laziness. Every one of them is somebody trying to be efficient.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th style="width:34px">#</th><th style="width:240px">The mistake</th><th>Why it costs you</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">1</td><td>Trusting a picture instead of a timestamp</td><td>A frozen feed looks completely normal. It hides an entire coverage gap.</td></tr>
+    <tr><td class="mono">2</td><td>Clearing repeat alerts as a pattern</td><td>Three alerts in ninety seconds can be wind. They can also be one person walking a fence line.</td></tr>
+    <tr><td class="mono">3</td><td>Leaving a camera off preset</td><td>You zoomed, got what you needed, moved on. The next operator has a blind spot they do not know about.</td></tr>
+    <tr><td class="mono">4</td><td>Reading a plate off a heavy zoom</td><td>A guessed character puts the wrong vehicle in a report, and you cannot take it back.</td></tr>
+    <tr><td class="mono">5</td><td>Writing the story in LVT notes</td><td>Event notes are a working annotation. The incident record is what gets read in a deposition.</td></tr>
+    <tr><td class="mono">6</td><td>Disarming to quiet a noisy unit</td><td>You just turned off a client's coverage. That is the Supervisor's call, and it belongs in the passdown.</td></tr>
+    <tr><td class="mono">7</td><td>Browsing a feed because it looked interesting</td><td>Every access is logged, the log gets read, and curiosity has never been a legitimate purpose.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Your first shift, in order</h2>
+<div class="tablewrap">
+<table>
+  <thead><tr><th style="width:140px">When</th><th>Do this in the platform</th><th style="width:120px">Governed by</th></tr></thead>
+  <tbody>
+    <tr><td><b>Sign on</b></td><td>Read the passdown first. Then log in on your own account and confirm your assigned sites are all present, and none are extra.</td><td class="mono">005, 009</td></tr>
+    <tr><td><b>First 10 minutes</b></td><td>Open every assigned site and confirm the timestamp advances. Check health for anything degraded overnight.</td><td class="mono">005</td></tr>
+    <tr><td><b>Before readiness</b></td><td>Report every failed check, then declare readiness and have it recorded with a time.</td><td class="mono">005</td></tr>
+    <tr><td><b>Through the shift</b></td><td>Structured patrol sweeps, not passive watching. Anything you spot yourself gets raised as a manual alert.</td><td class="mono">006</td></tr>
+    <tr><td><b>Every alert</b></td><td>Acknowledge, open the record, verify across cameras, read the site procedures, classify, capture, complete.</td><td class="mono">001, 007, 008</td></tr>
+    <tr><td><b>End of shift</b></td><td>Cameras back on presets, nothing left disarmed, every open item and fault in the passdown with its next action.</td><td class="mono">009, 013</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Knowledge check</h2>
+<div id="c6"></div>
+
+<div class="card takeaway">
+  ${BAR}
+  <h3>Carry this</h3>
+  <p style="margin-bottom:0">Every mistake on that list looks like professionalism from the inside. Covering a gap, keeping the queue moving, not bothering anyone. That is exactly why they are written down, so you can recognise the feeling before you act on it.</p>
+</div>
+`},init(){checks('c6',[
+  {q:"You finish working an event and the camera is still zoomed in on a doorway. What is the last thing you do?",
+   o:["Leave it, the next alert will move it anyway","Return it to preset before you move on","Note the new position in the passdown","Nothing, presets are a Platform SME matter"],
+   a:1,
+   ex:"Return it to preset. A camera left pointing where you left it is a blind spot the next operator does not know exists, and it will be discovered during an incident rather than before one."},
+  {q:"At 0210 you notice a unit whose voltage has been dropping all evening. It is still online. You:",
+   o:["Wait until it drops out, then log the outage","Raise it now, before it fails","Note it in the passdown at end of shift","Nothing, self healing will handle it"],
+   a:1,
+   ex:"Raise it now. This is the one fault on the dashboard you can actually get ahead of. Once it drops out you are logging a coverage gap instead of preventing one."},
+  {q:"A colleague asks you to pull up a site that is not on your roster, because something interesting happened there earlier.",
+   o:["Open it, they are a colleague on the same floor","Decline. Feed access needs a legitimate operational purpose, and it is logged","Open it but do not save anything","Ask the Shift Lead to open it instead"],
+   a:1,
+   ex:"Decline. Curiosity is not an operational purpose, the access log is read by people who were not there, and the fact that the request came from a colleague does not appear anywhere in that log. Your name does."}
+]);}},
+
+/* 7 */
+{part:"Assessment",nav:"7 · Open confirmations",render(){return `
+<p class="eyebrow">Register</p>
+<h1>Open<br>confirmations</h1>
+<p class="subline">Everything marked in this module, collected. None of it should be guessed on the floor, and all of it should be closed before this guide leaves draft.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Item to close</th><th style="width:180px">Owner</th></tr></thead>
+  <tbody>
+    <tr><td>Platform URL, SSO or direct login, and MFA method</td><td>Platform SME</td></tr>
+    <tr><td>Operator permission level, and what it includes</td><td>Platform SME</td></tr>
+    <tr><td>Incident system of record, which the two system rule depends on</td><td>SOP Lead</td></tr>
+    <tr><td>Alert type names as configured for this program</td><td>Platform SME</td></tr>
+    <tr><td>Talk-down, strobe and floodlight authority per site</td><td>Program Supervisor</td></tr>
+    <tr><td>Whether disarm sits in the operator permission set at all</td><td>Program Director</td></tr>
+    <tr><td>Video retention window and the evidence export path</td><td>Platform SME</td></tr>
+    <tr><td>Forensic Search and mobile app scope for GSOC roles</td><td>Program Director</td></tr>
+    <tr><td>Screenshots from the production tenant, six of them</td><td>Training Lead</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Screenshot capture list</h3>
+  <p class="small muted">Capture from the production tenant, with client identifying detail blurred, and drop each one into its numbered box.</p>
+  <ol class="small" style="margin-bottom:0">
+    <li>Login and landing screen</li>
+    <li>Unit list and map view</li>
+    <li>Live view with camera controls, showing PTZ and the optical/thermal toggle</li>
+    <li>Command Center event queue with several events in different states</li>
+    <li>Expanded event detail with notes, tags, procedures and contacts</li>
+    <li>Health dashboard with at least one degraded unit visible</li>
+  </ol>
+</div>
+
+<div class="card takeaway">
+  ${BAR}
+  <h3>Before this is issued to a trainee</h3>
+  <p style="margin-bottom:0">Nine open items and six missing screenshots. A trainee who works through this as it stands will learn the shape of the platform correctly and the specifics of our tenant not at all. That is fine for a draft review. It is not fine for a certification path under ${SOP('SOP-GSOC-002')}.</p>
+</div>
+`}}
+];
+
+/* ============================ widgets ============================ */
+function checks(mountId,items){
+  const host=document.getElementById(mountId);
+  items.forEach((it,ix)=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`<p class="mono muted" style="font-size:11px;margin-bottom:6px">Check ${ix+1} · Multiple choice</p>
+      <p class="prompt">${it.q}</p><div class="opts" id="${mountId}o${ix}"></div><div class="reveal" id="${mountId}r${ix}"></div>`;
+    host.appendChild(card);
+    const ow=card.querySelector('#'+mountId+'o'+ix), rv=card.querySelector('#'+mountId+'r'+ix);
+    it.o.forEach((o,oi)=>{
+      const b=document.createElement('button');
+      b.className='opt';
+      b.innerHTML=`<span class="k">${String.fromCharCode(65+oi)}</span><span>${o}</span>`;
+      b.onclick=()=>{
+        [...ow.children].forEach((c,ci)=>{c.disabled=true;if(ci===it.a)c.classList.add('right');else if(ci===oi)c.classList.add('wrong');});
+        const ok=oi===it.a;
+        rv.innerHTML=`<p class="${ok?'good':'risk'}" style="margin-bottom:8px"><b>${ok?'Correct.':'Not correct.'}</b></p><p class="small">${it.ex}</p>`;
+        rv.classList.add('show');
+        S.done.add(S.page);paint();
+      };
+      ow.appendChild(b);
+    });
+  });
+}
+
+/* ============================ router ============================ */
+function paint(){
+  const rail=document.getElementById('rail');
+  rail.innerHTML='<div class="railhead">Module contents</div>';
+  let lastPart=null;
+  SECTIONS.forEach((s,i)=>{
+    if(s.part!==lastPart){
+      const g=document.createElement('div');g.className='railgroup';g.textContent=s.part;
+      rail.appendChild(g);lastPart=s.part;
+    }
+    const b=document.createElement('button');
+    b.className='navitem'+(i===S.page?' on':'')+(S.done.has(i)?' done':'');
+    b.innerHTML=`<span class="n">${String(i).padStart(2,'0')}</span><span>${s.nav}</span>`;
+    b.onclick=()=>go(i);
+    rail.appendChild(b);
+  });
+  document.getElementById('progbar').style.width=(S.done.size/SECTIONS.length*100)+'%';
+}
+
+function go(i){
+  S.page=i;
+  const m=document.getElementById('main');
+  m.innerHTML=SECTIONS[i].render();
+  if(SECTIONS[i].init)SECTIONS[i].init();
+  if(i===0)S.done.add(0);
+
+  const nav=document.createElement('div');
+  nav.className='btnrow';nav.style.marginTop='34px';
+  if(i>0){const p=document.createElement('button');p.className='btn ghost';p.textContent='← Back';p.onclick=()=>go(i-1);nav.appendChild(p);}
+  if(i<SECTIONS.length-1){const n=document.createElement('button');n.className='btn';n.textContent='Continue →';n.onclick=()=>go(i+1);nav.appendChild(n);}
+  m.appendChild(nav);
+
+  const strip=document.createElement('div');
+  strip.className='docstrip';
+  strip.innerHTML=`<span>Specialized GSOC</span><span>GSOC-TRN-005</span><span>v0.1 Draft</span><span>Internal — operational</span>
+    <span class="pg">${String(i).padStart(2,'0')} / ${String(SECTIONS.length-1).padStart(2,'0')}</span>`;
+  m.appendChild(strip);
+
+  paint();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+go(0);
+</script>
+
+</body></html>
